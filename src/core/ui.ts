@@ -3,7 +3,11 @@ export class ArOverlay {
   readonly root: HTMLElement;
   private readonly hint: HTMLElement;
 
-  constructor(onClose: () => void) {
+  /**
+   * @param onClose 終了ボタン(×)を押したとき。null ならボタンを出さない
+   *   (再生中は操作なしの方針なので、通常は曲の終わりで自動的に終える)
+   */
+  constructor(onClose: (() => void) | null) {
     this.root = document.createElement('div');
     this.root.id = 'xr-overlay';
     this.root.style.display = 'none';
@@ -12,15 +16,9 @@ export class ArOverlay {
     this.hint.className = 'xr-hint';
     this.root.appendChild(this.hint);
 
-    const close = document.createElement('button');
-    close.className = 'xr-close';
-    close.type = 'button';
-    close.setAttribute('aria-label', 'AR を終了');
-    close.textContent = '×';
-    close.addEventListener('click', onClose);
-    // overlay のボタンを押したときに XR の select(= ステージ配置)が発火しないようにする
-    close.addEventListener('beforexrselect', (event) => event.preventDefault());
-    this.root.appendChild(close);
+    if (onClose !== null) {
+      this.root.appendChild(createCloseButton(onClose));
+    }
 
     document.body.appendChild(this.root);
   }
@@ -29,6 +27,18 @@ export class ArOverlay {
     this.hint.textContent = text ?? '';
     this.hint.hidden = text === null;
   }
+}
+
+function createCloseButton(onClose: () => void): HTMLButtonElement {
+  const close = document.createElement('button');
+  close.className = 'xr-close';
+  close.type = 'button';
+  close.setAttribute('aria-label', 'AR を終了');
+  close.textContent = '×';
+  close.addEventListener('click', onClose);
+  // overlay のボタンを押したときに XR の select(= ステージ配置)が発火しないようにする
+  close.addEventListener('beforexrselect', (event) => event.preventDefault());
+  return close;
 }
 
 /** デスクトップモードで再生を始めるボタン(自動再生の制限があるので、音を出すには1回クリックが要る) */
@@ -80,6 +90,17 @@ export class DebugHud {
     if (this.enabled) {
       this.el.textContent = lines.join('\n');
     }
+  }
+
+  /**
+   * 拍に合わせて背景を光らせる(音と映像がずれていないかを目と耳で確かめる用)
+   * @param amount 0〜1
+   * @param accent 小節の1拍目なら強く、色も変える
+   */
+  pulse(amount: number, accent: boolean): void {
+    if (!this.enabled) return;
+    const [rgb, max] = accent ? (['255, 196, 120', 0.7] as const) : (['143, 196, 255', 0.35] as const);
+    this.el.style.boxShadow = amount > 0 ? `inset 0 0 0 100vmax rgba(${rgb}, ${(max * amount).toFixed(3)})` : '';
   }
 }
 

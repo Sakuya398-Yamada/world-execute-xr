@@ -24,6 +24,7 @@ export class ArStageController {
   private readonly callbacks: ArCallbacks;
 
   private session: XRSession | null = null;
+  private ending = false;
   private hitTestSource: XRHitTestSource | null = null;
   private placeRequested = false;
   private placed = false;
@@ -62,8 +63,13 @@ export class ArStageController {
     return this.placed;
   }
 
+  /** 毎フレーム呼ばれても、終了の要求は1回だけ送る */
   endSession(): void {
-    void this.session?.end();
+    if (this.session === null || this.ending) return;
+    this.ending = true;
+    this.session.end().catch((error: unknown) => {
+      console.warn('AR セッションを終了できませんでした', error);
+    });
   }
 
   /** XR のフレームごとに呼ぶ */
@@ -117,6 +123,7 @@ export class ArStageController {
   private onSessionEnd(): void {
     this.session?.removeEventListener('select', this.onSelect);
     this.session = null;
+    this.ending = false;
     this.hitTestSource?.cancel();
     this.hitTestSource = null;
     this.anchor?.delete();
