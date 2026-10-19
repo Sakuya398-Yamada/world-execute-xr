@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Mili「world.execute(me);」の1番を、机の上の AR(WebXR `immersive-ar`)で再構成する映像作品のプロトタイプ。
-概要・構成・コマンドは README.md を参照。
+概要・構成・コマンドは README.md、歌詞の行ごとのシーンの設計は docs/design.md を参照。
 
 ## 進め方
 
@@ -14,7 +14,9 @@ Mili「world.execute(me);」の1番を、机の上の AR(WebXR `immersive-ar`)�
 - TypeScript は strict。`any` は使わない(oxlint で error)
 - 時刻の基準は `audio.currentTime` だけ(音源が無いときだけ無音のタイマー)。シーンには `?latency=` で補正した時刻(`ctx.songTime`、`update` の `t`)が渡る
 - 音楽に合わせるタイミングは、拍グリッド(`public/beats.json`)を基準に小節・拍で書く
-- 歌詞と音源はリポジトリに入れない(著作物)。`public/audio/` と `tools/beats/out/` は gitignore 済み
+- シーンは `src/scenes/kit.ts` の `defineScene` で作り、マテリアルとラベルは `Fader` から作る(頭と終わりのフェード、破棄を任せる)。シーンの中のタイミングは拍で書く
+- アニメーションは時刻だけから決める(巻き戻し・`?bar=` での途中開始でも同じ見た目になるように)。乱数は `src/sim/random.ts` の種つきのものを使い、状態を持つ計算は巻き戻されたら最初から計算し直す
+- 歌詞と音源はリポジトリに入れない(著作物)。歌詞の和訳や言い換えも同じ扱い。`public/audio/` と `tools/beats/out/` は gitignore 済み
 - WebXR Device API だけを使う。Meta 専用の API・ライブラリは使わない(Android XR / XREAL への移植を前提にしている)
 - 映像作品なので、再生が始まったあとの操作は作らない(許すのは起動時の操作だけ)。開発用の機能は URL パラメータ(`?t=` `?bar=` `?debug` など)で出す
 - 3D のラベル(troika-three-text)は同梱の IBM Plex Mono(latin)なので、ASCII しか表示できない。式は `2*pi*f*t` のように書く

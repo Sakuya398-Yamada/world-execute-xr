@@ -1,3 +1,18 @@
 [
-  { "scene": "rectifier", "start": { "bar": 25 }, "end": { "bar": 32 } }
+  { "scene": "power", "start": { "bar": 8 }, "end": { "bar": 10 } },
+  { "scene": "cage", "start": { "bar": 10 }, "end": { "bar": 11 } },
+  { "scene": "heap", "start": { "bar": 11 }, "end": { "bar": 13 } },
+  { "scene": "registers", "start": { "bar": 13 }, "end": { "bar": 15 } },
+  { "scene": "spins", "start": { "bar": 15 }, "end": { "bar": 17 } },
+  { "scene": "pca", "start": { "bar": 17 }, "end": { "bar": 19 } },
+  { "scene": "circle", "start": { "bar": 19 }, "end": { "bar": 21 } },
+  { "scene": "tangent", "start": { "bar": 21 }, "end": { "bar": 23 } },
+  { "scene": "limit", "start": { "bar": 23 }, "end": { "bar": 25 } },
+  { "scene": "rectifier", "start": { "bar": 25 }, "end": { "bar": 27 } },
+  { "scene": "dizzy", "start": { "bar": 27 }, "end": { "bar": 29 } },
+  { "scene": "epoch", "start": { "bar": 29 }, "end": { "bar": 31 } },
+  { "scene": "kuramoto", "start": { "bar": 31 }, "end": { "bar": 33 } },
+  { "scene": "sweep", "start": { "bar": 33 }, "end": { "bar": 37 } },
+  { "scene": "descent", "start": { "bar": 37 }, "end": { "bar": 39 } },
+  { "scene": "maze", "start": { "bar": 39 }, "end": { "bar": 41 } }
 ]

@@ -81,6 +81,13 @@ export class BeatGrid {
     };
   }
 
+  /** 再生位置 t [s] に一番近い拍(小節・拍) */
+  nearestBeat(t: number): { readonly bar: number; readonly beat: number } {
+    const whole = Math.round((t - this.origin) / this.secondsPerBeat);
+    const inBar = ((whole % this.beatsPerBar) + this.beatsPerBar) % this.beatsPerBar;
+    return { bar: Math.floor(whole / this.beatsPerBar) + 1, beat: inBar + 1 };
+  }
+
   /** 再生する音源の長さが解析した音源と違えば、その説明を返す */
   checkSource(duration: number): string | null {
     const diff = duration - this.sourceDuration;

@@ -29,7 +29,7 @@ export class SceneManager {
       this.stop();
       const scene = entry === null ? undefined : this.registry.get(entry.scene);
       if (entry !== null && scene !== undefined) {
-        scene.enter(this.ctx);
+        scene.enter(this.ctx, entry.end - entry.start);
         this.current = { entry, scene };
       }
     }
