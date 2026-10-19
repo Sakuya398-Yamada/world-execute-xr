@@ -1,7 +1,7 @@
 import { Color, DataTexture, Group, LinearFilter, Mesh, MeshBasicMaterial, PlaneGeometry, RGBAFormat, SRGBColorSpace, Vector3 } from 'three';
 import type { Text } from 'troika-three-text';
 import { LineBuilder } from '../gfx/lines';
-import { findSkyrmionCores } from '../sim/skyrmions';
+import { findDomains } from '../sim/topology';
 import {
   DynamicLine,
   Fader,
@@ -49,6 +49,9 @@ const COUNTDOWN = 4;
 const FIELD = { relax: 0.45, max: 1.2, ramp: [20, 34] as const };
 /** 芯に印をつけ始める拍 */
 const MARK_FROM = 30;
+/** c 成分がこれより小さい格子点のまとまりを芯とみなす。大きすぎるまとまり(迷路状のドメイン)は除く */
+const CORE_THRESHOLD = -0.5;
+const CORE_MAX_SIZE = 40;
 /** パネルの横軸の終わり(シーンの最後) */
 const PLOT_END = 40;
 
@@ -239,7 +242,8 @@ export const spins = defineScene('spins', () => {
       const marking = smoothstep(progress(beat, [MARK_FROM, MARK_FROM + 1]));
       let rCount = 0;
       if (marking > 0) {
-        for (const core of findSkyrmionCores(lattice)) {
+        for (const core of findDomains(lattice.m, lattice.nx, lattice.ny, CORE_THRESHOLD)) {
+          if (core.size > CORE_MAX_SIZE) continue;
           const ring = rings[rCount];
           if (ring === undefined) break;
           field.sitePosition(core.x, core.y, ring.position).setY(0.013);

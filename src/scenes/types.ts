@@ -1,4 +1,4 @@
-import type { Group, PerspectiveCamera, WebGLRenderer } from 'three';
+import type { Group, Object3D, PerspectiveCamera, WebGLRenderer } from 'three';
 import type { BeatGrid, BeatPosition } from '../core/beats';
 
 export interface SceneContext {
@@ -28,4 +28,8 @@ export interface SceneModule {
    */
   update(ctx: SceneContext, t: number, dt: number): void;
   exit(ctx: SceneContext): void;
+  /**
+   * 起動時に1回だけ呼ぶ。表示と同じものを作って返す。シェーダーを先にコンパイルしておくのに使い、返したものは破棄しない
+   */
+  warmup?(ctx: SceneContext): Object3D;
 }

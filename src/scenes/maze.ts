@@ -15,7 +15,7 @@ import {
 } from 'three';
 import { LineBuilder } from '../gfx/lines';
 import { breadthFirst, carveMaze, isOpen, meetInMiddle } from '../sim/maze';
-import { panelFrame } from './chorusParts';
+import { panelFrame } from './parts/chorus';
 import {
   DynamicLine,
   Fader,

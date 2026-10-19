@@ -1,4 +1,5 @@
 import { seededRandom } from './random';
+import { topologicalCharge } from './topology';
 
 /**
  * 2次元の正方格子上の古典スピン系(磁化)の緩和。three.js には依存しない。
@@ -141,28 +142,6 @@ export class SpinLattice {
    * 磁場の向き(+c)の中に、芯が −c を向いたスキルミオンが1つあると Q = −1。
    */
   topologicalCharge(): number {
-    const { nx, ny } = this;
-    let omega = 0;
-    for (let y = 0; y + 1 < ny; y++) {
-      for (let x = 0; x + 1 < nx; x++) {
-        const i00 = (x + y * nx) * 3;
-        const i10 = i00 + 3;
-        const i01 = i00 + nx * 3;
-        const i11 = i01 + 3;
-        omega += this.solidAngle(i00, i10, i11) + this.solidAngle(i00, i11, i01);
-      }
-    }
-    return omega / (4 * Math.PI);
-  }
-
-  /** 3つのスピンが単位球面上に張る三角形の、符号つきの立体角 */
-  private solidAngle(i: number, k: number, l: number): number {
-    const m = this.m;
-    const [a1, b1, c1] = [m[i] ?? 0, m[i + 1] ?? 0, m[i + 2] ?? 0];
-    const [a2, b2, c2] = [m[k] ?? 0, m[k + 1] ?? 0, m[k + 2] ?? 0];
-    const [a3, b3, c3] = [m[l] ?? 0, m[l + 1] ?? 0, m[l + 2] ?? 0];
-    const triple = a1 * (b2 * c3 - c2 * b3) + b1 * (c2 * a3 - a2 * c3) + c1 * (a2 * b3 - b2 * a3);
-    const dot = 1 + (a1 * a2 + b1 * b2 + c1 * c2) + (a2 * a3 + b2 * b3 + c2 * c3) + (a3 * a1 + b3 * b1 + c3 * c1);
-    return 2 * Math.atan2(triple, dot);
+    return topologicalCharge(this.m, this.nx, this.ny);
   }
 }

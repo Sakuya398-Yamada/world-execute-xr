@@ -188,8 +188,14 @@ export function defineScene(id: string, create: (ctx: SceneContext, length: numb
       disposeTree(view.root);
       view = null;
     },
+    warmup(ctx) {
+      return create(ctx, WARMUP_LENGTH).root;
+    },
   };
 }
+
+/** 事前コンパイル用に作るときのシーンの長さ [拍](見た目は使わないので、ふつうの2小節) */
+const WARMUP_LENGTH = 8;
 
 /** ステージの大きさ [m](机の上の約 40cm × 30cm) */
 export const STAGE = { width: 0.4, depth: 0.3 } as const;
@@ -207,10 +213,17 @@ export function titleBlock(fader: Fader, fig: number, title: string, subtitle: s
     .polyline([new Vector3(box.x0, Y_INK, box.z0), new Vector3(box.x1, Y_INK, box.z0), new Vector3(box.x1, Y_INK, box.z1), new Vector3(box.x0, Y_INK, box.z1)], true)
     .segment(new Vector3(box.x0, Y_INK, (box.z0 + box.z1) / 2), new Vector3(box.x1, Y_INK, (box.z0 + box.z1) / 2));
   group.add(frame.build(fader.line(PALETTE.gridMajor, 0.42)));
-  group.add(floorLabel(fader, `FIG.${String(fig).padStart(2, '0')}  ${title}`, box.x0 + 0.008, 0.1175, { anchorX: 'left', size: 0.0058 }));
-  group.add(floorLabel(fader, subtitle, box.x0 + 0.008, 0.1345, { anchorX: 'left', size: 0.0048 }));
+  // 等幅フォントなので、文字数から幅を見積もり、欄に収まらないときは文字を小さくする
+  const room = box.x1 - box.x0 - 0.016;
+  const fit = (text: string, size: number): number => Math.min(size, room / (text.length * MONO_ADVANCE));
+  const heading = `FIG.${String(fig).padStart(2, '0')}  ${title}`;
+  group.add(floorLabel(fader, heading, box.x0 + 0.008, 0.1175, { anchorX: 'left', size: fit(heading, 0.0058) }));
+  group.add(floorLabel(fader, subtitle, box.x0 + 0.008, 0.1345, { anchorX: 'left', size: fit(subtitle, 0.0048) }));
   return group;
 }
+
+/** IBM Plex Mono の1文字の送り幅(文字の高さに対する比) */
+const MONO_ADVANCE = 0.6;
 
 /** 床に寝かせたラベル(手前から読める向き) */
 export function floorLabel(fader: Fader, text: string, x: number, z: number, options: Partial<LabelOptions> = {}, opacity = 1): Text {

@@ -1,5 +1,5 @@
 import { Vector3, type LineBasicMaterial, type LineSegments } from 'three';
-import { LineBuilder } from '../gfx/lines';
+import { LineBuilder } from '../../gfx/lines';
 
 /**
  * サビのシーン(sweep / descent / maze)で使う、小さな描画の部品。

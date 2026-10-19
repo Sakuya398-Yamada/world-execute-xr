@@ -69,4 +69,34 @@ describe('topology', () => {
     expect(skyrmionCores(domains)).toEqual([]);
     expect(classifyPhase(domains, meanNormal(m, nx * ny))).toBe('HL');
   });
+
+  it('findDomains: 離れた芯を別々に見つけ、重心を返す。大きすぎるまとまりは大きさで見分けられる', () => {
+    const nx = 20;
+    const ny = 12;
+    const m = new Float32Array(nx * ny * 3);
+    for (let i = 0; i < nx * ny; i++) m.set([0, 0, 1], i * 3);
+    const paint = (cx: number, cy: number, radius: number): void => {
+      for (let y = 0; y < ny; y++) {
+        for (let x = 0; x < nx; x++) {
+          if (Math.hypot(x - cx, y - cy) <= radius) m.set([0, 0, -1], (x + y * nx) * 3);
+        }
+      }
+    };
+    paint(4, 5, 1.5);
+    paint(14, 7, 1.5);
+    const cores = findDomains(m, nx, ny, -0.5).toSorted((a, b) => a.x - b.x);
+    expect(cores).toHaveLength(2);
+    expect(cores[0]?.x).toBeCloseTo(4, 5);
+    expect(cores[0]?.y).toBeCloseTo(5, 5);
+    expect(cores[1]?.x).toBeCloseTo(14, 7);
+    expect(cores[1]?.y).toBeCloseTo(7, 5);
+
+    // 大きなまとまりだけの配置では、芯とみなせるものは無い
+    for (let i = 0; i < nx * ny; i++) m.set([0, 0, 1], i * 3);
+    paint(10, 6, 5);
+    const domains = findDomains(m, nx, ny, -0.5);
+    expect(domains).toHaveLength(1);
+    expect(domains.filter((d) => d.size <= 40)).toHaveLength(0);
+  });
 });
+

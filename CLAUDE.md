@@ -17,6 +17,7 @@ Mili「world.execute(me);」の1番を、机の上の AR(WebXR `immersive-ar`)�
 - シーンは `src/scenes/kit.ts` の `defineScene` で作り、マテリアルとラベルは `Fader` から作る(頭と終わりのフェード、破棄を任せる)。シーンの中のタイミングは拍で書く
 	- 切り替えはクロスフェード。シーンは終わったあとも `TRANSITION_BEATS` の間 update が呼ばれる(beat > length)ので、最後の状態のまま安定させる
 	- 床は全シーン共通の `StageBase` が出す。シーンで全面の床を描かない。右下には `titleBlock`(図番と題名)を入れる。題名に歌詞は書かない
+	- いくつかのシーンで使う描画の部品は `src/scenes/parts/`、three.js に依存しない計算は `src/sim/`(テストつき)に置く
 - アニメーションは時刻だけから決める(巻き戻し・`?bar=` での途中開始でも同じ見た目になるように)。乱数は `src/sim/random.ts` の種つきのものを使い、状態を持つ計算は巻き戻されたら最初から計算し直す
 - 歌詞と音源はリポジトリに入れない(著作物)。歌詞の和訳や言い換えも同じ扱い。`public/audio/` と `tools/beats/out/` は gitignore 済み
 - WebXR Device API だけを使う。Meta 専用の API・ライブラリは使わない(Android XR / XREAL への移植を前提にしている)

@@ -3,7 +3,7 @@ import type { Text } from 'troika-three-text';
 import { LineBuilder } from '../gfx/lines';
 import { seededRandom } from '../sim/random';
 import { classifyPhase, findDomains, meanNormal, skyrmionCores, topologicalCharge, type Domain, type SpinPhase } from '../sim/topology';
-import { cornerBrackets, floorAxis } from './chorusParts';
+import { cornerBrackets, floorAxis } from './parts/chorus';
 import {
   Fader,
   PALETTE,

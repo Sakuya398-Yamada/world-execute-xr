@@ -2,7 +2,7 @@ import { BufferAttribute, BufferGeometry, Color, DynamicDrawUsage, Group, LineSe
 import { LineBuilder } from '../gfx/lines';
 import { contourSegments } from '../sim/contour';
 import { gradient, heavyBall, loss, lossRange } from '../sim/descent';
-import { arrowHead, panelFrame } from './chorusParts';
+import { arrowHead, panelFrame } from './parts/chorus';
 import {
   DynamicLine,
   Fader,

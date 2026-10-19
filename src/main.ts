@@ -78,6 +78,15 @@ async function main(): Promise<void> {
   const stageBase = new StageBase(timeline, transition);
   stage.add(stageBase.root);
 
+  // 全シーンを一度作り、シェーダーを先にコンパイルしておく(シーンに入った瞬間の引っかかりを防ぐ)。
+  // three.js はマテリアルを破棄するとコンパイル済みのシェーダーも解放するので、作ったものは破棄しない
+  const warmup = new Group();
+  for (const module of sceneRegistry.values()) {
+    const root = module.warmup?.(ctx);
+    if (root !== undefined) warmup.add(root);
+  }
+  await renderer.compileAsync(warmup, camera, scene);
+
   // 開発用: 歌詞に合わせてキーを押し、小節を記録する(timeline.json の下書き用)
   const marker = params.debug ? new BarMarker(beats, songTimeNow, (t) => clock.seek(Math.max(t + params.latency, 0))) : null;
   if (marker !== null) {
