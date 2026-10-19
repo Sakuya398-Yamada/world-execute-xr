@@ -1,6 +1,6 @@
 import { Group, Vector3 } from 'three';
 import { LineBuilder } from '../gfx/lines';
-import { DynamicLine, Fader, PALETTE, beatPulse, defineScene, progress, setText, stageFloor, standLabel } from './kit';
+import { DynamicLine, Fader, PALETTE, beatPulse, defineScene, progress, setText, standLabel } from './kit';
 
 /**
  * #11 めまい: 宙に浮くリサージュ曲線が、位相のずれた2つの像に分かれて揺れる。拍ごとにストロボのように明滅する。
@@ -20,7 +20,6 @@ const RIPPLES = 4;
 export const dizzy = defineScene('dizzy', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader));
 
   const figure = new Group();
   figure.position.copy(CENTER);

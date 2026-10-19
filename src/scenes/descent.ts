@@ -1,6 +1,6 @@
 import { Group, Vector3 } from 'three';
 import { LineBuilder } from '../gfx/lines';
-import { DynamicLine, Fader, PALETTE, beatPulse, defineScene, easeInOutCubic, progress, stageFloor, standLabel } from './kit';
+import { DynamicLine, Fader, PALETTE, beatPulse, defineScene, easeInOutCubic, progress, standLabel } from './kit';
 
 /**
  * #15 実行する: 損失関数の曲面を、点が勾配降下(慣性つき)で谷底へ転がる。最小値に着いた瞬間「EXECUTE」が走り、
@@ -90,7 +90,6 @@ function icons(): LineBuilder[] {
 export const descent = defineScene('descent', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader, 0.5));
 
   // 曲面のワイヤーフレーム
   let fMin = Infinity;

@@ -1,6 +1,6 @@
 import { Group, Vector3 } from 'three';
 import { LineBuilder } from '../gfx/lines';
-import { DynamicLine, Fader, PALETTE, Y_INK, defineScene, easeInOutCubic, floorLabel, progress, stageFloor, standLabel } from './kit';
+import { DynamicLine, Fader, PALETTE, Y_INK, defineScene, easeInOutCubic, floorLabel, progress, standLabel } from './kit';
 
 /**
  * #7 円周: 机に立てた円が1回転ぶん転がり、円周が床の直線に伸びる。縁の1点はサイクロイドを描く。
@@ -16,7 +16,6 @@ const SPOKES = 6;
 export const circle = defineScene('circle', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader));
 
   // 車輪(XY 面に立てた円とスポーク)。縁の印は最初に床と接している点
   const wheel = new Group();

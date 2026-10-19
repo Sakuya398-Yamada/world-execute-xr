@@ -15,7 +15,7 @@ import {
 } from 'three';
 import { LineBuilder } from '../gfx/lines';
 import { seededRandom } from '../sim/random';
-import { DynamicLine, Fader, PALETTE, Y_INK, defineScene, easeInOutCubic, floorLabel, progress, setText, stageFloor, standLabel } from './kit';
+import { DynamicLine, Fader, PALETTE, Y_INK, defineScene, easeInOutCubic, floorLabel, progress, setText, standLabel } from './kit';
 
 /**
  * #16 囚われたシミュレーション: 机の上の立体迷路を、両端の2つの光点から幅優先探索(BFS)で探る。
@@ -89,7 +89,6 @@ function bfs(open: Cell[][], start: Cell): { dist: number[]; parent: number[] } 
 export const maze = defineScene('maze', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader, 0.5));
 
   const open = carve(16);
   const A: Cell = 0;

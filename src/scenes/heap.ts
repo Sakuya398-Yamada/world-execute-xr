@@ -1,6 +1,6 @@
 import { BoxGeometry, BufferGeometry, DynamicDrawUsage, EdgesGeometry, Float32BufferAttribute, Group, LineSegments, Mesh, MeshBasicMaterial, Points, PointsMaterial, Vector3 } from 'three';
 import { LineBuilder } from '../gfx/lines';
-import { Fader, PALETTE, Y_INK, defineScene, easeInOutCubic, floorLabel, progress, smoothstep, stageFloor, standLabel } from './kit';
+import { Fader, PALETTE, Y_INK, defineScene, easeInOutCubic, floorLabel, progress, smoothstep, standLabel } from './kit';
 
 /**
  * #3 オブジェクト生成: 机に敷いたヒープ領域のセルが確保されるたびに点が湧き、点 → 線 → 面 → 立方体と組み上がって机に着地する。
@@ -46,7 +46,6 @@ function bounce(x: number): number {
 export const heap = defineScene('heap', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader));
 
   // ヒープ: セルの枠とアドレス。確保されたセルは塗りが光る
   const grid = new LineBuilder();

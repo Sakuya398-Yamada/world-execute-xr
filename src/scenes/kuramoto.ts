@@ -1,7 +1,7 @@
 import { BufferGeometry, DynamicDrawUsage, Float32BufferAttribute, Group, Points, PointsMaterial, Vector3 } from 'three';
 import { LineBuilder } from '../gfx/lines';
 import { seededRandom } from '../sim/random';
-import { DynamicLine, Fader, PALETTE, Y_INK, defineScene, floorLabel, progress, setText, stageFloor } from './kit';
+import { DynamicLine, Fader, PALETTE, Y_INK, defineScene, floorLabel, progress, setText } from './kit';
 
 /**
  * #13 深く一つになる: ばらばらに振れていた振り子が、結合が強まるにつれて位相がそろい、一斉に振れるようになる(蔵本モデル)。
@@ -25,7 +25,6 @@ const CIRCLE = { center: new Vector3(0, Y_INK, 0.085), radius: 0.035 } as const;
 export const kuramoto = defineScene('kuramoto', (ctx) => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader));
 
   // 中心の固有角振動数: 2拍で1往復
   const spb = ctx.beats.secondsPerBeat;

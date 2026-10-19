@@ -1,6 +1,6 @@
 import { Group, Vector3 } from 'three';
 import { LineBuilder } from '../gfx/lines';
-import { Fader, PALETTE, Y_INK, defineScene, floorLabel, stageFloor } from './kit';
+import { Fader, PALETTE, Y_INK, defineScene, floorLabel } from './kit';
 import { SpinField } from './spinField';
 
 /**
@@ -30,7 +30,6 @@ const SELECT = 8;
 export const sweep = defineScene('sweep', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader, 0.5));
 
   const width = NX * PITCH;
   const depth = NY * PITCH;

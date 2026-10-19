@@ -1,6 +1,6 @@
 import { Group, Vector3 } from 'three';
 import { LineBuilder } from '../gfx/lines';
-import { DynamicLine, Fader, PALETTE, defineScene, easeInOutCubic, progress, setText, stageFloor, standLabel } from './kit';
+import { DynamicLine, Fader, PALETTE, defineScene, easeInOutCubic, progress, setText, standLabel } from './kit';
 
 /**
  * #8 接線: 机の上を正弦波が流れ、その上を接線が滑っていく。下には導関数(cos)が並んで流れ、接線の傾きと同じ値を指す。
@@ -24,7 +24,6 @@ const TANGENT_HALF = 0.035;
 export const tangent = defineScene('tangent', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader));
 
   const baselines = new LineBuilder()
     .segment(new Vector3(X0, SIN_Y, Z), new Vector3(X1, SIN_Y, Z))

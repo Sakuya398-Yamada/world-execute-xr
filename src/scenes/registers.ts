@@ -1,7 +1,7 @@
 import { Group, Vector3 } from 'three';
 import { LineBuilder } from '../gfx/lines';
 import { seededRandom } from '../sim/random';
-import { Fader, PALETTE, defineScene, progress, setText, stageFloor, standLabel } from './kit';
+import { Fader, PALETTE, defineScene, progress, setText, standLabel } from './kit';
 
 /**
  * #4 初期化: 宙に浮くパラメータのレジスタ。値がランダムに回り、拍ごとに1つずつ確定していく。
@@ -33,7 +33,6 @@ function scramble(value: string, random: () => number): string {
 export const registers = defineScene('registers', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader));
 
   const top = PANEL.y0 + (ROWS.length + 1) * PANEL.rowHeight;
   const frame = new LineBuilder()

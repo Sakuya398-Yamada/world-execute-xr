@@ -12,7 +12,6 @@ import {
   progress,
   setText,
   smoothstep,
-  stageFloor,
   standLabel,
 } from './kit';
 
@@ -36,7 +35,6 @@ const CURVE_SAMPLES = 120;
 export const power = defineScene('power', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader));
 
   // トグルスイッチ: 台座と、支点まわりに倒れるレバー
   const base = new LineSegments(new EdgesGeometry(new BoxGeometry(0.05, 0.012, 0.028)), fader.line(PALETTE.ink, 0.9));

@@ -11,7 +11,7 @@ import {
   WireframeGeometry,
 } from 'three';
 import { seededRandom } from '../sim/random';
-import { Fader, PALETTE, clamp01, defineScene, easeOutCubic, floorLabel, progress, stageFloor } from './kit';
+import { Fader, PALETTE, clamp01, defineScene, easeOutCubic, floorLabel, progress } from './kit';
 
 /**
  * #2 保護: ステージを覆うワイヤーフレームのドーム(ファラデーケージ)が下から組み上がり、外から来るノイズが表面で弾かれる。
@@ -29,7 +29,6 @@ const BUILD: readonly [number, number] = [0, 2];
 export const cage = defineScene('cage', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader));
 
   // ドーム: 球の上半分の辺だけを残し、低い順に並べて下から組み上げる
   const sphere = new WireframeGeometry(new IcosahedronGeometry(RADIUS, 3));

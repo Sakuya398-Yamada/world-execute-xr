@@ -1,7 +1,7 @@
 import { BufferAttribute, BufferGeometry, DynamicDrawUsage, Group, LineSegments, Vector3 } from 'three';
 import type { Text } from 'troika-three-text';
 import { LineBuilder } from '../gfx/lines';
-import { Fader, PALETTE, Y_INK, defineScene, floorLabel, progress, setText, stageFloor, standLabel } from './kit';
+import { Fader, PALETTE, Y_INK, defineScene, floorLabel, progress, setText, standLabel } from './kit';
 
 /**
  * #12 紀元後から紀元前へ: 机を横切る時間軸が流れ、カウンタが 2026 年から紀元前へさかのぼる。
@@ -28,7 +28,6 @@ function era(year: number): string {
 export const epoch = defineScene('epoch', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader));
 
   root.add(new LineBuilder().segment(new Vector3(-HALF_WIDTH, Y_INK, Z), new Vector3(HALF_WIDTH, Y_INK, Z)).build(fader.line(PALETTE.ink, 0.8)));
   // 「今」を指す針

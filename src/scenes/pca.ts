@@ -1,7 +1,7 @@
 import { BufferGeometry, DynamicDrawUsage, Euler, Float32BufferAttribute, Group, Matrix4, Points, PointsMaterial, Vector3 } from 'three';
 import { LineBuilder } from '../gfx/lines';
 import { seededRandom } from '../sim/random';
-import { Fader, PALETTE, defineScene, easeInOutCubic, floorLabel, progress, setText, stageFloor, standLabel } from './kit';
+import { Fader, PALETTE, defineScene, easeInOutCubic, floorLabel, progress, setText, standLabel } from './kit';
 
 /**
  * #6 次元: 一点に潰れていた点群が、第1・第2・第3主成分の向きに順に広がり、0次元から3次元になる。
@@ -24,7 +24,6 @@ function gaussian(random: () => number): number {
 export const pca = defineScene('pca', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader));
 
   // 点群は主成分の座標で作り、回転して置く(回転の列が主成分の向き)
   const basis = new Matrix4().makeRotationFromEuler(new Euler(0.5, 0.7, -0.35));

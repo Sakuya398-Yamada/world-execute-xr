@@ -1,6 +1,6 @@
 import { BufferAttribute, BufferGeometry, DynamicDrawUsage, Group, LineSegments, Vector3 } from 'three';
 import { LineBuilder } from '../gfx/lines';
-import { Fader, PALETTE, defineScene, floorLabel, progress, setText, stageFloor, standLabel } from './kit';
+import { Fader, PALETTE, defineScene, floorLabel, progress, setText, standLabel } from './kit';
 
 /**
  * #9 極限: 部分和 S_n = 1 + 1/4 + 1/9 + … の棒が増えていく。横軸は x = 1 − 1/n の目盛りで縮むので、
@@ -22,7 +22,6 @@ const yOf = (s: number): number => (s / LIMIT) * HEIGHT;
 export const limit = defineScene('limit', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader));
 
   // 部分和の棒(縦線)。あらかじめ全部作っておき、描く本数を増やしていく
   const array = new Float32Array(MAX_TERMS * 6);

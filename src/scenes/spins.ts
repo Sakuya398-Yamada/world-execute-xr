@@ -1,5 +1,5 @@
 import { Group, Vector3 } from 'three';
-import { Fader, PALETTE, defineScene, floorLabel, progress, setText, stageFloor, standLabel } from './kit';
+import { Fader, PALETTE, defineScene, floorLabel, progress, setText, standLabel } from './kit';
 import { SpinField } from './spinField';
 
 /**
@@ -17,7 +17,6 @@ const REVEAL: readonly [number, number] = [0, 1.5];
 export const spins = defineScene('spins', () => {
   const fader = new Fader();
   const root = new Group();
-  root.add(stageFloor(fader, 0.5));
 
   const field = new SpinField(NX, NY, PARAMS, 5, PITCH, new Vector3(0, 0, 0.01), fader);
   root.add(field.mesh);
