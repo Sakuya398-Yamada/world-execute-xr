@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.local
+
+# 音源はリポジトリに含めない(各自ローカルに配置)
+public/audio/*
+!public/audio/.gitkeep
