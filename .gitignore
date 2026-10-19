@@ -10,3 +10,6 @@ public/audio/*
 tools/beats/.venv/
 tools/beats/out/
 __pycache__/
+
+# Claude Code の並行作業用の作業ツリー
+.claude/worktrees/
