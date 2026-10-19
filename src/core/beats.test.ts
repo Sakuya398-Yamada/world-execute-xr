@@ -42,6 +42,14 @@ describe('BeatGrid', () => {
     }
   });
 
+  it('一番近い拍に丸める', () => {
+    expect(grid.nearestBeat(0.75)).toEqual({ bar: 1, beat: 1 });
+    expect(grid.nearestBeat(0.99)).toEqual({ bar: 1, beat: 1 });
+    expect(grid.nearestBeat(1.01)).toEqual({ bar: 1, beat: 2 });
+    expect(grid.nearestBeat(2.6)).toEqual({ bar: 2, beat: 1 });
+    expect(grid.nearestBeat(0.3)).toEqual({ bar: 0, beat: 4 });
+  });
+
   it('音源の長さのチェック', () => {
     expect(grid.checkSource(100)).toBeNull();
     expect(grid.checkSource(100 + SOURCE_DURATION_TOLERANCE * 0.9)).toBeNull();

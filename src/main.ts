@@ -4,6 +4,7 @@ import { Color, Group, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { loadBeatGrid } from './core/beats';
 import { createClock, SilentClock, type PlaybackClock } from './core/clock';
 import { DesktopView } from './core/desktop';
+import { BarMarker } from './core/marker';
 import { createOriginMarker, createReticle } from './core/markers';
 import { readLaunchParams } from './core/params';
 import { SceneManager } from './core/sceneManager';
@@ -70,6 +71,12 @@ async function main(): Promise<void> {
     },
   };
   const manager = new SceneManager(sceneRegistry, timeline, ctx);
+
+  // 開発用: 歌詞に合わせてキーを押し、小節を記録する(timeline.json の下書き用)
+  const marker = params.debug ? new BarMarker(beats, songTimeNow, (t) => clock.seek(Math.max(t + params.latency, 0))) : null;
+  if (marker !== null) {
+    window.addEventListener('keydown', marker.onKeyDown);
+  }
 
   const startPlayback = async (): Promise<void> => {
     try {
@@ -162,6 +169,7 @@ async function main(): Promise<void> {
       `mode   ${renderer.xr.isPresenting ? `ar / stage ${ar.isPlaced ? 'placed' : 'searching'} / anchor ${ar.anchorState}` : 'desktop'}`,
       ...(params.latency === 0 ? [] : [`latency ${Math.round(params.latency * 1000)} ms`]),
       ...(sourceWarning === null ? [] : [`warn   ${sourceWarning}`]),
+      ...(marker?.hudLines() ?? []),
     ]);
     const sinceBeat = position.phase * beats.secondsPerBeat;
     hud.pulse(clock.playing ? Math.max(1 - sinceBeat / BEAT_FLASH, 0) : 0, position.beat === 1);

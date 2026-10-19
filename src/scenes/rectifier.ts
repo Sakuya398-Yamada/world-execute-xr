@@ -19,6 +19,7 @@ import type { BeatGrid } from '../core/beats';
 import { arcPoints, LineBuilder } from '../gfx/lines';
 import { createLabel } from '../gfx/text';
 import { inputVoltage, RectifierSim, unsmoothedOutput, type RectifierParams } from '../sim/bridgeRectifier';
+import { clamp01, disposeTree, easeOutCubic, lineMaterial, progress, smoothstep } from './kit';
 import type { SceneModule } from './types';
 
 /**
@@ -33,21 +34,21 @@ const CIRCUIT: Omit<RectifierParams, 'freqHz'> = { vPeak: 10, vf: 0.7, r: 1000, 
 /** 入力の正弦波 1 周期の拍数。130 BPM で約 1.083Hz(目で追える見た目用の値) */
 const BEATS_PER_CYCLE = 2;
 
-/** シーン内の時刻 [拍](シーン開始が 0。シーンは小節の頭から始める前提) */
+/** シーン内の時刻 [拍](シーン開始が 0。シーンは小節の頭から始め、2小節 = 8拍を想定) */
 const TIMING = {
-  floorIn: [0, 2],
-  draw: [1, 5],
-  rise: [3, 7],
-  panels: [4, 6],
-  labels: [5, 7],
-  /** コンデンサのスイッチが閉じる時刻(5 小節目の頭) */
-  capacitorOn: 16,
+  floorIn: [0, 1],
+  draw: [0.25, 2.25],
+  rise: [1, 3.5],
+  panels: [2, 3],
+  labels: [2.5, 3.5],
+  /** コンデンサのスイッチが閉じる時刻(2小節目の2拍目) */
+  capacitorOn: 5,
   /** スイッチのレバーが倒れるのにかける時間 */
   switchMotion: 0.5,
   /** 部品1つが床から立ち上がるのにかける時間 */
-  bodyRise: 1.5,
+  bodyRise: 1,
   /** コンデンサが入ったあと、元の脈流(ゴースト)が現れるのにかける時間 */
-  ghostIn: 2,
+  ghostIn: 1,
 } as const;
 
 const TRACE_SAMPLES = 240;
@@ -122,15 +123,6 @@ const DIODES: readonly DiodeSpec[] = [
 ];
 
 // ---- 補助 ----
-
-const clamp01 = (x: number): number => Math.min(Math.max(x, 0), 1);
-const progress = (t: number, [from, to]: readonly [number, number]): number => clamp01((t - from) / (to - from));
-const easeOutCubic = (x: number): number => 1 - (1 - x) ** 3;
-const smoothstep = (x: number): number => x * x * (3 - 2 * x);
-
-function lineMaterial(color: number, opacity = 1): LineBasicMaterial {
-  return new LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false });
-}
 
 /** 床に描いた線と、そこから立ち上がる立体を対にして持つ */
 interface Body {
@@ -225,15 +217,7 @@ class RectifierView {
   }
 
   dispose(): void {
-    this.root.traverse((object) => {
-      if (object instanceof Text) {
-        object.dispose();
-      } else if (object instanceof Mesh || object instanceof Line) {
-        object.geometry.dispose();
-        const material: Material | Material[] = object.material;
-        for (const m of Array.isArray(material) ? material : [material]) m.dispose();
-      }
-    });
+    disposeTree(this.root);
   }
 
   // ---- 時間発展 ----

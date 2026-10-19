@@ -20,7 +20,8 @@ export interface SceneContext {
 export interface SceneModule {
   /** timeline.json の `scene` と一致させる */
   readonly id: string;
-  enter(ctx: SceneContext): void;
+  /** @param duration シーンの長さ [s](タイムラインの end − start) */
+  enter(ctx: SceneContext, duration: number): void;
   /**
    * @param t シーン開始からの経過秒(タイムラインの start が 0)
    * @param dt 前フレームからの再生位置の差分 [s]。停止中は 0
