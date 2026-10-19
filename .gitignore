@@ -5,3 +5,8 @@ dist/
 # 音源はリポジトリに含めない(各自ローカルに配置)
 public/audio/*
 !public/audio/.gitkeep
+
+# 解析ツール(tools/beats)の仮想環境と出力(出力は音源を含むのでコミットしない)
+tools/beats/.venv/
+tools/beats/out/
+__pycache__/

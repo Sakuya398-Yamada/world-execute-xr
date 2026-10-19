@@ -3,6 +3,8 @@ export interface PlaybackClock {
   readonly kind: 'audio' | 'silent';
   /** 再生位置 [s] */
   readonly time: number;
+  /** 長さ [s] */
+  readonly duration: number;
   readonly playing: boolean;
   readonly ended: boolean;
   play(): Promise<void>;
@@ -20,6 +22,10 @@ class AudioClock implements PlaybackClock {
 
   get time(): number {
     return this.audio.currentTime;
+  }
+
+  get duration(): number {
+    return this.audio.duration;
   }
 
   get playing(): boolean {
@@ -45,7 +51,7 @@ class AudioClock implements PlaybackClock {
 
 export class SilentClock implements PlaybackClock {
   readonly kind = 'silent';
-  private readonly duration: number;
+  readonly duration: number;
   private offset = 0;
   /** 再生中なら、offset の時点に対応する performance.now() */
   private startedAt: number | null = null;

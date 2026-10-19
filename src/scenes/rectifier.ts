@@ -15,6 +15,7 @@ import {
   type Material,
 } from 'three';
 import { Text } from 'troika-three-text';
+import type { BeatGrid } from '../core/beats';
 import { arcPoints, LineBuilder } from '../gfx/lines';
 import { createLabel } from '../gfx/text';
 import { inputVoltage, RectifierSim, unsmoothedOutput, type RectifierParams } from '../sim/bridgeRectifier';
@@ -27,30 +28,33 @@ import type { SceneModule } from './types';
 
 // ---- 定数(後で歌に合わせて調整する) ----
 
-/** 回路定数。周波数は目で追える見た目用の値 */
-const PARAMS: RectifierParams = { vPeak: 10, freqHz: 1, vf: 0.7, r: 1000, rs: 15, c: 0.006 };
+/** 回路定数(周波数は BEATS_PER_CYCLE から決める) */
+const CIRCUIT: Omit<RectifierParams, 'freqHz'> = { vPeak: 10, vf: 0.7, r: 1000, rs: 15, c: 0.006 };
+/** 入力の正弦波 1 周期の拍数。130 BPM で約 1.083Hz(目で追える見た目用の値) */
+const BEATS_PER_CYCLE = 2;
 
-/** シーン内の時刻 [s](シーン開始が 0) */
+/** シーン内の時刻 [拍](シーン開始が 0。シーンは小節の頭から始める前提) */
 const TIMING = {
-  floorIn: [0, 1],
-  draw: [0.4, 2.2],
-  rise: [1.4, 3.0],
-  panels: [2.0, 3.0],
-  labels: [2.4, 3.2],
-  /** コンデンサのスイッチが閉じる時刻 */
-  capacitorOn: 7.0,
+  floorIn: [0, 2],
+  draw: [1, 5],
+  rise: [3, 7],
+  panels: [4, 6],
+  labels: [5, 7],
+  /** コンデンサのスイッチが閉じる時刻(5 小節目の頭) */
+  capacitorOn: 16,
   /** スイッチのレバーが倒れるのにかける時間 */
-  switchMotion: 0.3,
+  switchMotion: 0.5,
+  /** 部品1つが床から立ち上がるのにかける時間 */
+  bodyRise: 1.5,
+  /** コンデンサが入ったあと、元の脈流(ゴースト)が現れるのにかける時間 */
+  ghostIn: 2,
 } as const;
 
-/** 積分の刻み [s] */
-const SIM_STEP = 1 / 960;
 const TRACE_SAMPLES = 240;
-/** 波形パネルに表示する時間幅 [s](2周期分) */
-const TRACE_WINDOW = 2 / PARAMS.freqHz;
-const STEPS_PER_SAMPLE = Math.max(1, Math.round(TRACE_WINDOW / TRACE_SAMPLES / SIM_STEP));
-/** ダイオードの発光を正規化する基準電流(コンデンサ無しのときの最大電流) */
-const I_REF = PARAMS.vPeak / (PARAMS.r + PARAMS.rs);
+/** 波形パネルに表示する時間幅 [周期] */
+const TRACE_CYCLES = 2;
+/** 波形の1サンプルあたりの積分の刻み数 */
+const STEPS_PER_SAMPLE = 8;
 
 /** 床の大きさ [m] */
 const FLOOR = { width: 0.4, depth: 0.3 } as const;
@@ -132,7 +136,7 @@ function lineMaterial(color: number, opacity = 1): LineBasicMaterial {
 interface Body {
   readonly group: Group;
   readonly material: LineBasicMaterial;
-  /** 立ち上がりを始める時刻(左から右へ順に立ち上げる) */
+  /** 立ち上がりを始める時刻 [拍](左から右へ順に立ち上げる) */
   readonly riseAt: number;
 }
 
@@ -144,16 +148,23 @@ interface Panel {
   readonly title: Text;
 }
 
-/** 立ち上げの順番を X 位置から決める */
+/** 立ち上げの順番を X 位置から決める [拍] */
 function riseStart(x: number): number {
   const [from, to] = TIMING.rise;
-  const span = to - from - 0.6;
+  const span = to - from - TIMING.bodyRise;
   return from + clamp01((x + FLOOR.width / 2) / FLOOR.width) * span;
 }
 
 class RectifierView {
   readonly root = new Group();
-  private readonly sim = new RectifierSim(PARAMS, SIM_STEP);
+  private readonly params: RectifierParams;
+  /** 1拍の長さ [s] */
+  private readonly secondsPerBeat: number;
+  /** 積分の刻み [s]。波形パネルにちょうど TRACE_CYCLES 周期が収まるように決める */
+  private readonly simStep: number;
+  private readonly sim: RectifierSim;
+  /** ダイオードの発光を正規化する基準電流(コンデンサ無しのときの最大電流) */
+  private readonly iRef: number;
 
   /** 直近の出力電圧(新しい順に並べるためのリングバッファ) */
   private readonly outRing = new Float32Array(TRACE_SAMPLES);
@@ -178,7 +189,13 @@ class RectifierView {
   private readonly baseColor = new Color();
   private readonly glowColor = new Color(COLOR.glow);
 
-  constructor() {
+  constructor(beats: BeatGrid) {
+    this.secondsPerBeat = beats.secondsPerBeat;
+    this.params = { ...CIRCUIT, freqHz: 1 / (BEATS_PER_CYCLE * this.secondsPerBeat) };
+    this.simStep = TRACE_CYCLES / this.params.freqHz / (TRACE_SAMPLES * STEPS_PER_SAMPLE);
+    this.sim = new RectifierSim(this.params, this.simStep);
+    this.iRef = this.params.vPeak / (this.params.r + this.params.rs);
+
     this.root.name = 'rectifier';
     this.buildFloor();
     this.ink = this.buildSchematic();
@@ -198,10 +215,12 @@ class RectifierView {
     this.outPanel.group.add(this.ghost);
   }
 
+  /** @param t シーン開始からの経過秒 */
   update(t: number): void {
     this.advanceSim(t);
-    this.animateBuild(t);
-    this.animateCircuit(t);
+    const beat = t / this.secondsPerBeat;
+    this.animateBuild(beat);
+    this.animateCircuit(beat);
     this.updateTraces();
   }
 
@@ -219,6 +238,7 @@ class RectifierView {
 
   // ---- 時間発展 ----
 
+  /** @param t 経過秒(回路の計算は秒で行う) */
   private advanceSim(t: number): void {
     if (t < this.sim.time) {
       // 巻き戻されたら最初から計算し直す(状態を持つ回路なので、途中からは再開できない)
@@ -226,8 +246,9 @@ class RectifierView {
       this.ringHead = 0;
       this.ringCount = 0;
     }
-    while (this.sim.time + SIM_STEP <= t) {
-      const sample = this.sim.advance(this.sim.time >= TIMING.capacitorOn);
+    const capacitorOn = TIMING.capacitorOn * this.secondsPerBeat;
+    while (this.sim.time + this.simStep <= t) {
+      const sample = this.sim.advance(this.sim.time >= capacitorOn);
       if (this.sim.steps % STEPS_PER_SAMPLE === 0) {
         this.ringHead = (this.ringHead + 1) % TRACE_SAMPLES;
         this.outRing[this.ringHead] = sample.vOut;
@@ -236,6 +257,7 @@ class RectifierView {
     }
   }
 
+  /** @param t 経過拍数 */
   private animateBuild(t: number): void {
     const floor = smoothstep(progress(t, TIMING.floorIn));
     for (const { material, opacity } of this.fadeMaterials) {
@@ -249,7 +271,7 @@ class RectifierView {
     this.switchLever.visible = draw > 0.85;
 
     for (const body of this.bodies) {
-      const k = easeOutCubic(clamp01((t - body.riseAt) / 0.6));
+      const k = easeOutCubic(clamp01((t - body.riseAt) / TIMING.bodyRise));
       body.group.scale.y = Math.max(k, 1e-4);
       body.group.visible = k > 0;
     }
@@ -266,15 +288,16 @@ class RectifierView {
     }
   }
 
+  /** @param t 経過拍数 */
   private animateCircuit(t: number): void {
     const s = this.sim.latest;
-    const current = clamp01(s.iBridge / I_REF) ** 0.6;
+    const current = clamp01(s.iBridge / this.iRef) ** 0.6;
     for (const { spec, body } of this.diodes) {
       const conducting = spec.positiveHalf === s.vIn >= 0;
       this.setGlow(body, COLOR.body, conducting ? current : 0);
     }
-    this.setGlow(this.source, COLOR.body, (Math.abs(s.vIn) / PARAMS.vPeak) * 0.6);
-    this.setGlow(this.resistor, COLOR.body, (s.vOut / PARAMS.vPeak) * 0.8);
+    this.setGlow(this.source, COLOR.body, (Math.abs(s.vIn) / this.params.vPeak) * 0.6);
+    this.setGlow(this.resistor, COLOR.body, (s.vOut / this.params.vPeak) * 0.8);
 
     // スイッチ: capacitorOn の時刻にちょうど接点が閉じるように、その少し前から倒し始める
     const closing = smoothstep(clamp01((t - (TIMING.capacitorOn - TIMING.switchMotion)) / TIMING.switchMotion));
@@ -285,7 +308,7 @@ class RectifierView {
     // コンデンサ無しの波形をゴーストとして残し、均された波形と比べられるようにする
     const ghostMaterial = this.ghost.material;
     if (ghostMaterial instanceof LineBasicMaterial) {
-      ghostMaterial.opacity = 0.7 * smoothstep(clamp01((t - TIMING.capacitorOn) / 1.0));
+      ghostMaterial.opacity = 0.7 * smoothstep(clamp01((t - TIMING.capacitorOn) / TIMING.ghostIn));
     }
     if (connected !== this.outTitleSmoothing) {
       this.outTitleSmoothing = connected;
@@ -301,8 +324,9 @@ class RectifierView {
 
   /** 波形パネルの更新。左端が最新で、時間が経つと右へ流れていく(IN から OUT へ左→右に流れる向き) */
   private updateTraces(): void {
-    const newest = this.sim.time - (this.sim.steps % STEPS_PER_SAMPLE) * SIM_STEP;
-    const dtSample = STEPS_PER_SAMPLE * SIM_STEP;
+    const p = this.params;
+    const newest = this.sim.time - (this.sim.steps % STEPS_PER_SAMPLE) * this.simStep;
+    const dtSample = STEPS_PER_SAMPLE * this.simStep;
     const count = this.ringCount;
 
     const inPos = this.positions(this.inPanel.trace);
@@ -314,15 +338,15 @@ class RectifierView {
     for (let k = 0; k < count; k++) {
       const u = k / (TRACE_SAMPLES - 1);
       const tk = newest - k * dtSample;
-      const vIn = inputVoltage(PARAMS, tk);
+      const vIn = inputVoltage(p, tk);
       const vOut = this.outRing[(this.ringHead - k + TRACE_SAMPLES) % TRACE_SAMPLES] ?? 0;
 
       inPos[k * 3] = -wIn / 2 + u * wIn;
-      inPos[k * 3 + 1] = hIn / 2 + (vIn / PARAMS.vPeak) * hIn * 0.4;
+      inPos[k * 3 + 1] = hIn / 2 + (vIn / p.vPeak) * hIn * 0.4;
       outPos[k * 3] = -wOut / 2 + u * wOut;
-      outPos[k * 3 + 1] = outBaseline(hOut) + (vOut / PARAMS.vPeak) * hOut * 0.78;
+      outPos[k * 3 + 1] = outBaseline(hOut) + (vOut / p.vPeak) * hOut * 0.78;
       ghostPos[k * 3] = outPos[k * 3] ?? 0;
-      ghostPos[k * 3 + 1] = outBaseline(hOut) + (unsmoothedOutput(PARAMS, vIn) / PARAMS.vPeak) * hOut * 0.78;
+      ghostPos[k * 3 + 1] = outBaseline(hOut) + (unsmoothedOutput(p, vIn) / p.vPeak) * hOut * 0.78;
     }
 
     for (const line of [this.inPanel.trace, this.outPanel.trace, this.ghost]) {
@@ -649,7 +673,7 @@ let view: RectifierView | null = null;
 export const rectifier: SceneModule = {
   id: 'rectifier',
   enter(ctx) {
-    view = new RectifierView();
+    view = new RectifierView(ctx.beats);
     ctx.stage.add(view.root);
   },
   update(_ctx, t) {

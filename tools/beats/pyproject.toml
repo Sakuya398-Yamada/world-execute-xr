@@ -1,0 +1,12 @@
+[project]
+name = "beats"
+version = "0.0.0"
+description = "音源の拍グリッドを解析して public/beats.json を出す開発用ツール"
+requires-python = ">=3.12"
+dependencies = [
+    "librosa==1.0.0",
+    "soundfile>=0.13",
+]
+
+[tool.uv]
+package = false

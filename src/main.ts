@@ -1,6 +1,7 @@
 import '@fontsource/ibm-plex-mono/500.css';
 import './style.css';
 import { Color, Group, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { loadBeatGrid } from './core/beats';
 import { createClock, SilentClock, type PlaybackClock } from './core/clock';
 import { DesktopView } from './core/desktop';
 import { createOriginMarker, createReticle } from './core/markers';
@@ -13,6 +14,8 @@ import { sceneRegistry } from './scenes';
 import type { SceneContext } from './scenes/types';
 
 const DESKTOP_BACKGROUND = new Color(0x05070d);
+/** `?debug` の HUD が拍の頭で光っている時間 [s] */
+const BEAT_FLASH = 0.15;
 const BASE = import.meta.env.BASE_URL;
 
 async function main(): Promise<void> {
@@ -39,17 +42,31 @@ async function main(): Promise<void> {
   const desktop = new DesktopView(camera, renderer.domElement);
   const hud = new DebugHud(params.debug);
 
-  const timeline = await loadTimeline(`${BASE}timeline.json`);
+  const beats = await loadBeatGrid(`${BASE}beats.json`);
+  const timeline = await loadTimeline(`${BASE}timeline.json`, beats);
   const duration = timelineEnd(timeline);
+  const startTime = params.startBar === null ? params.startTime : Math.max(beats.timeOf(params.startBar), 0);
   let clock: PlaybackClock = await createClock(`${BASE}audio/track.mp3`, duration);
-  clock.seek(params.startTime);
+  clock.seek(startTime);
+
+  const sourceWarning = clock.kind === 'audio' ? beats.checkSource(clock.duration) : null;
+  if (sourceWarning !== null) {
+    console.warn(sourceWarning);
+  }
+
+  /** 映像の時刻。音の出力の遅れの分だけ、再生位置より遅らせる */
+  const songTimeNow = (): number => Math.max(clock.time - params.latency, 0);
 
   const ctx: SceneContext = {
     stage,
     camera,
     renderer,
     get songTime() {
-      return clock.time;
+      return songTimeNow();
+    },
+    beats,
+    get beat() {
+      return beats.positionAt(songTimeNow());
     },
   };
   const manager = new SceneManager(sceneRegistry, timeline, ctx);
@@ -68,19 +85,20 @@ async function main(): Promise<void> {
   };
 
   const play = new PlayOverlay(() => {
-    if (clock.ended) clock.seek(params.startTime);
+    if (clock.ended) clock.seek(startTime);
     play.hide();
     void startPlayback();
   });
 
-  const overlay = new ArOverlay(() => ar.endSession());
+  // 再生中は操作なしの方針なので、終了ボタンは開発用(?debug)のときだけ出す
+  const overlay = new ArOverlay(params.debug ? () => ar.endSession() : null);
   const ar = new ArStageController(renderer, stage, reticle, overlay, {
     onSessionStart: () => {
       desktop.suspend();
       scene.background = null;
       play.hide();
       clock.pause();
-      clock.seek(params.startTime);
+      clock.seek(startTime);
       manager.stop();
       stage.visible = false;
       overlay.setHint('机の上を見回して、置きたい場所をタップ');
@@ -93,7 +111,7 @@ async function main(): Promise<void> {
     },
     onSessionEnd: () => {
       clock.pause();
-      clock.seek(params.startTime);
+      clock.seek(startTime);
       manager.stop();
       stage.visible = true;
       scene.background = DESKTOP_BACKGROUND;
@@ -113,7 +131,7 @@ async function main(): Promise<void> {
   };
   window.addEventListener('resize', resize);
 
-  let prevSongTime = clock.time;
+  let prevSongTime = songTimeNow();
   renderer.setAnimationLoop((_time: number, frame?: XRFrame) => {
     if (frame === undefined) {
       desktop.update();
@@ -121,23 +139,32 @@ async function main(): Promise<void> {
       ar.update(frame);
     }
 
-    const songTime = clock.time;
+    const songTime = songTimeNow();
     const dt = Math.min(Math.max(songTime - prevSongTime, 0), 0.1);
     prevSongTime = songTime;
     manager.update(songTime, dt);
     originMarker.visible = manager.activeEntry === null;
 
-    if (!renderer.xr.isPresenting && clock.ended && !play.visible) {
+    if (renderer.xr.isPresenting) {
+      // 映像作品なので、曲が終わったら AR も終える
+      if (ar.isPlaced && clock.ended) ar.endSession();
+    } else if (clock.ended && !play.visible) {
       play.show('REPLAY');
     }
 
     const entry = manager.activeEntry;
+    const position = beats.positionAt(songTime);
     hud.update([
       `t      ${songTime.toFixed(2)} s`,
+      `bar    ${position.bar}.${position.beat}  (${beats.bpm} BPM)`,
       `scene  ${entry === null ? '-' : `${entry.scene} (+${(songTime - entry.start).toFixed(2)} s)`}`,
       `clock  ${clock.kind}${clock.playing ? '' : ' (paused)'}`,
       `mode   ${renderer.xr.isPresenting ? `ar / stage ${ar.isPlaced ? 'placed' : 'searching'} / anchor ${ar.anchorState}` : 'desktop'}`,
+      ...(params.latency === 0 ? [] : [`latency ${Math.round(params.latency * 1000)} ms`]),
+      ...(sourceWarning === null ? [] : [`warn   ${sourceWarning}`]),
     ]);
+    const sinceBeat = position.phase * beats.secondsPerBeat;
+    hud.pulse(clock.playing ? Math.max(1 - sinceBeat / BEAT_FLASH, 0) : 0, position.beat === 1);
 
     renderer.render(scene, camera);
   });

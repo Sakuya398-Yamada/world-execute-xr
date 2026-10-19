@@ -1,4 +1,5 @@
 import type { Group, PerspectiveCamera, WebGLRenderer } from 'three';
+import type { BeatGrid, BeatPosition } from '../core/beats';
 
 export interface SceneContext {
   /**
@@ -8,8 +9,12 @@ export interface SceneContext {
   readonly stage: Group;
   readonly camera: PerspectiveCamera;
   readonly renderer: WebGLRenderer;
-  /** 曲全体の再生位置 [s] */
+  /** 曲全体の再生位置 [s](`?latency=` の補正を含む) */
   readonly songTime: number;
+  /** 拍グリッド(public/beats.json)。1拍の長さや、小節 → 秒の変換に使う */
+  readonly beats: BeatGrid;
+  /** songTime の小節・拍 */
+  readonly beat: BeatPosition;
 }
 
 export interface SceneModule {
