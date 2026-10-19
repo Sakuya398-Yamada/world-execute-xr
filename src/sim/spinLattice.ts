@@ -63,9 +63,14 @@ export class SpinLattice {
     this.stepCount = 0;
   }
 
-  step(): void {
+  /**
+   * 1ステップ緩和させる。
+   * @param field 外部磁場(c 方向)。省略時はパラメータの b。時間とともに磁場を変えるときに使う
+   */
+  step(field?: number): void {
     const { nx, ny, m, next } = this;
-    const { j, d, b, rate } = this.p;
+    const { j, d, rate } = this.p;
+    const b = field ?? this.p.b;
     for (let y = 0; y < ny; y++) {
       for (let x = 0; x < nx; x++) {
         const i = (x + y * nx) * 3;
@@ -100,5 +105,64 @@ export class SpinLattice {
     }
     m.set(next);
     this.stepCount += 1;
+  }
+
+  /**
+   * 1スピンあたりのエネルギー E/N。
+   * @param field 外部磁場。省略時はパラメータの b
+   */
+  energy(field?: number): number {
+    const { nx, ny, m } = this;
+    const { j, d } = this.p;
+    const b = field ?? this.p.b;
+    let e = 0;
+    // 各ボンドを1回ずつ数える(右と下の隣だけ)
+    const bond = (i: number, k: number, da: number, db: number): number => {
+      const [a1, b1, c1] = [m[i] ?? 0, m[i + 1] ?? 0, m[i + 2] ?? 0];
+      const [a2, b2, c2] = [m[k] ?? 0, m[k + 1] ?? 0, m[k + 2] ?? 0];
+      // d_ij·(m_i × m_j)。d_ij = (da, db, 0)
+      const cross = da * (b1 * c2 - c1 * b2) + db * (c1 * a2 - a1 * c2);
+      return -j * (a1 * a2 + b1 * b2 + c1 * c2) - d * cross;
+    };
+    for (let y = 0; y < ny; y++) {
+      for (let x = 0; x < nx; x++) {
+        const i = (x + y * nx) * 3;
+        if (x + 1 < nx) e += bond(i, i + 3, 1, 0);
+        if (y + 1 < ny) e += bond(i, i + nx * 3, 0, 1);
+        e -= b * (m[i + 2] ?? 0);
+      }
+    }
+    return e / (nx * ny);
+  }
+
+  /**
+   * トポロジカル電荷(スキルミオン数)Q = (1/4π) Σ m·(∂x m × ∂y m) の格子版。
+   * 各格子の正方形を2つの三角形に分け、3つのスピンが張る立体角(符号つき)を足し合わせる(Berg–Lüscher の方法)。
+   * 磁場の向き(+c)の中に、芯が −c を向いたスキルミオンが1つあると Q = −1。
+   */
+  topologicalCharge(): number {
+    const { nx, ny } = this;
+    let omega = 0;
+    for (let y = 0; y + 1 < ny; y++) {
+      for (let x = 0; x + 1 < nx; x++) {
+        const i00 = (x + y * nx) * 3;
+        const i10 = i00 + 3;
+        const i01 = i00 + nx * 3;
+        const i11 = i01 + 3;
+        omega += this.solidAngle(i00, i10, i11) + this.solidAngle(i00, i11, i01);
+      }
+    }
+    return omega / (4 * Math.PI);
+  }
+
+  /** 3つのスピンが単位球面上に張る三角形の、符号つきの立体角 */
+  private solidAngle(i: number, k: number, l: number): number {
+    const m = this.m;
+    const [a1, b1, c1] = [m[i] ?? 0, m[i + 1] ?? 0, m[i + 2] ?? 0];
+    const [a2, b2, c2] = [m[k] ?? 0, m[k + 1] ?? 0, m[k + 2] ?? 0];
+    const [a3, b3, c3] = [m[l] ?? 0, m[l + 1] ?? 0, m[l + 2] ?? 0];
+    const triple = a1 * (b2 * c3 - c2 * b3) + b1 * (c2 * a3 - a2 * c3) + c1 * (a2 * b3 - b2 * a3);
+    const dot = 1 + (a1 * a2 + b1 * b2 + c1 * c2) + (a2 * a3 + b2 * b3 + c2 * c3) + (a3 * a1 + b3 * b1 + c3 * c1);
+    return 2 * Math.atan2(triple, dot);
   }
 }

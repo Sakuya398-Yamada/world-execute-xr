@@ -48,11 +48,19 @@ export class SpinField {
     while (this.lattice.steps < target) this.lattice.step();
   }
 
+  /** 格子点 (x, y) の矢印の根元の位置(ステージ座標) */
+  sitePosition(x: number, y: number, target: Vector3): Vector3 {
+    const { nx, ny } = this.lattice;
+    return target.set((x - (nx - 1) / 2) * this.pitch, 0, -(y - (ny - 1) / 2) * this.pitch).add(this.mesh.position);
+  }
+
   /**
    * 矢印の向きと色を更新する。
    * @param reveal 中心からの距離(格子の間隔を単位)がこれより遠い矢印は出さない。広がっていく演出に使う
+   * @param wobble 見た目だけの揺れの大きさ(0 で揺れない)。計算を始める前の「熱い」状態を見せるのに使う
+   * @param time 揺れの位相 [拍]
    */
-  draw(reveal = Infinity): void {
+  draw(reveal = Infinity, wobble = 0, time = 0): void {
     const { nx, ny, m } = this.lattice;
     for (let y = 0; y < ny; y++) {
       for (let x = 0; x < nx; x++) {
@@ -61,7 +69,13 @@ export class SpinField {
         const b = m[i * 3 + 1] ?? 0;
         const c = m[i * 3 + 2] ?? 1;
         // 格子の a → +X、b → −Z(奥)、c → +Y
-        this.direction.set(a, c, -b).normalize();
+        this.direction.set(a, c, -b);
+        if (wobble > 0) {
+          this.direction.x += wobble * Math.sin(time * 2.3 + i * 1.7);
+          this.direction.y += wobble * Math.sin(time * 3.1 + i * 0.9);
+          this.direction.z += wobble * Math.cos(time * 1.9 + i * 2.3);
+        }
+        this.direction.normalize();
         this.quaternion.setFromUnitVectors(UP, this.direction);
         const gx = x - (nx - 1) / 2;
         const gy = y - (ny - 1) / 2;
