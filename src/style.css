@@ -200,3 +200,13 @@ canvas {
   opacity: 0.7;
   text-decoration: underline;
 }
+
+.start-credit {
+  margin: 12px 0 0;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.start-credit a {
+  color: inherit;
+}
