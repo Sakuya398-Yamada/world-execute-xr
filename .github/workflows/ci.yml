@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Syntax check of the beat analysis tool
+        run: python3 -m py_compile tools/beats/beats.py
+      # 全シーンを headless Chromium の WebGL(SwiftShader)で描いてみる
+      - run: npx playwright install --with-deps --only-shell chromium
+      - run: npm run test:browser

@@ -45,13 +45,15 @@ function createCloseButton(onClose: () => void): HTMLButtonElement {
 export class PlayOverlay {
   private readonly button: HTMLButtonElement;
 
-  constructor(onPlay: () => void) {
+  /** @param shown 最初から出すか(音源が決まるまでは出さない) */
+  constructor(onPlay: () => void, shown = true) {
     this.button = document.createElement('button');
     this.button.className = 'play-overlay';
     this.button.type = 'button';
     this.button.addEventListener('click', onPlay);
     document.body.appendChild(this.button);
     this.show('PLAY');
+    if (!shown) this.hide();
   }
 
   get visible(): boolean {

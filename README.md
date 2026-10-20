@@ -5,6 +5,7 @@ Mili「world.execute(me);」の1番を、机の上の AR(WebXR `immersive-ar`)�
 
 - Vite + TypeScript(strict)+ three.js + troika-three-text
 - WebXR Device API のみ使用(Meta 専用の API・ライブラリは使わない。Android XR / XREAL Aura への移植を前提にしている)
+- 音源は同梱しない。見る人が自分の音源ファイルを選んで再生する
 
 ## セットアップ
 
@@ -19,11 +20,17 @@ npm run dev
 
 ### 音源
 
-`public/audio/track.mp3` に音源を置く。著作物なのでリポジトリには含めない(`.gitignore` 済み)。
-音源が無い場合は、無音のタイマーで再生位置だけが進む。
+音源は著作物なのでリポジトリにもビルドにも含めない。開くと最初に音源を選ぶ画面が出る。
 
-拍のタイミング(`public/beats.json`)はこの音源を解析して作っている。配信版と MV 版のように、イントロなどが違う音源を置くと拍がずれる。
-音源の長さが解析した音源と 0.05 秒以上違うと、コンソールと `?debug` の表示に警告が出る。
+- 「音源ファイルを選ぶ」か、ページにファイルをドラッグ&ドロップして選ぶ。選ぶと「> PLAY」と「START AR」が出る
+- 選んだファイルはこのブラウザの IndexedDB に保存し、次に開いたときは自動で読み込む(どこにも送信しない)。プライベートモードなど保存できない環境では、毎回選び直す
+- 「音源なしで見る」を選ぶと、無音のタイマーで再生位置だけが進む
+
+拍のタイミング(`public/beats.json`)は特定の音源を解析して作っている。配信版と MV 版のように、イントロなどが違う音源を選ぶと拍がずれる。
+音源の長さが解析した音源(212.25 秒)と 0.05 秒以上違うと、選ぶ画面とコンソール、`?debug` の表示に警告が出る。
+
+開発サーバー(`npm run dev`)では、`public/audio/track.mp3` があればそれを使い、選ぶ画面は出さない(`.gitignore` 済み)。
+`npm run build` は、`public/audio/` を `dist/` にコピーしたあと消す(`vite.config.ts` の `excludeAudio`)。手元でビルドしたものを上げても音源は公開されない。
 
 ### URL パラメータ
 
@@ -32,6 +39,8 @@ npm run dev
 | `?t=45` | 再生開始位置 [秒]。シーンの確認用 |
 | `?bar=25` | 再生開始位置 [小節]。`?t=` より優先 |
 | `?latency=150` | 音の出力の遅れ [ms]。映像をこの分だけ遅らせる(下記) |
+| `?scale=0.7` | ステージ全体の大きさの倍率(0.25〜4)。床は等倍で約 40cm × 30cm なので、狭い机では小さくする |
+| `?fps` | 右上に fps と1フレームの時間を表示する(下記)。デスクトップでは `F` キーで表示と非表示を切り替える |
 | `?debug` | 再生位置・小節.拍・シーン名・AR の状態を左上に表示し、拍ごとに光らせる(小節の1拍目はオレンジ)。AR 中の終了ボタン(×)もこのときだけ出す |
 
 例: `http://localhost:5173/?bar=25&debug`
@@ -39,17 +48,20 @@ npm run dev
 `audio.currentTime` は、実際に耳に届いている位置より少し先に進む。有線のスピーカーやイヤホンなら気にならないが、Bluetooth イヤホンだと 100ms を超えることが多い。
 `?debug` で表示が拍に合わせて光るので、音とずれて見えるときは `?latency=` で合わせる。
 
+`?fps` の表示は 0.5 秒ごとに更新する。1行目がその間の平均 fps とフレーム間隔の最大、2行目が CPU 時間の平均(シーンの更新と、描画の呼び出し)。
+CPU 時間が短いのに fps が低ければ、GPU(描画そのもの)が重いと見当がつく。AR 中も表示される(切り替えはできない)。
+
 ## 開発
 
 ### デスクトップモード
 
 XR 非対応の環境、および XR セッションの外では、同じシーンを OrbitControls で表示する(ドラッグで回転、ホイールでズーム)。
-自動再生の制限があるので、音を出すには「> PLAY」を1回クリックする。再生が始まったあとの操作はない。
+自動再生の制限があるので、音を出すには音源を選んだあと「> PLAY」を1回クリックする。再生が始まったあとの操作はない。
 
 ### Immersive Web Emulator
 
 1. Chrome に [Immersive Web Emulator](https://chromewebstore.google.com/detail/cgffilbpcibhmcfbgggfhfolhkfbhmik) を入れる
-2. 開発サーバーのページを開くと、下部のボタンが「START AR」になる
+2. 開発サーバーのページを開くと、下部のボタンが「START AR」になる(音源を選ぶまでは出ない)
 3. エミュレーターの操作パネル(DevTools の「WebXR」タブ。バージョンによってはページ上に出る)で、デバイス(Meta Quest 3 など)と部屋の環境を選ぶ。hit-test はこの環境のジオメトリに対して行われる
 4. 「START AR」を押し、ヘッドセットを机か床に向けてレティクル(白い輪)を出す
 5. コントローラーのトリガーでタップ(select)を送ると、その位置がステージ原点になり再生が始まる
@@ -58,13 +70,27 @@ XR 非対応の環境、および XR セッションの外では、同じシー�
 ### チェック
 
 ```sh
-npm run typecheck   # tsc --noEmit
-npm run lint        # oxlint(any は禁止)
-npm run test        # vitest(拍の計算、タイムラインの読み込みなど)
-npm run build       # 型チェック + 本番ビルド
+npm run typecheck      # tsc --noEmit(src と、設定ファイル用の tsconfig.node.json)
+npm run lint           # oxlint(any は禁止)
+npm run test           # vitest の unit(拍の計算、タイムラインの読み込み、src/sim の計算など。Node で動かす)
+npm run test:browser   # vitest の browser(下記)
+npm run build          # 型チェック + 本番ビルド
 ```
 
 TypeScript 7 は typescript-eslint に未対応なので、lint には oxlint を使っている。
+
+`npm run test:browser` は、全シーンを headless Chromium の WebGL(SwiftShader)で実際に描いてみる確認(`src/scenes/scenes.browser.test.ts`)。見た目は確かめず、次のことだけを見る。
+
+- 全シーンのシェーダーを先にコンパイルできる
+- 頭から終わりまで再生しても、エラー(`console.error`、WebGL のエラー)が出ない
+- 2回通して再生しても、GPU に残るジオメトリとテクスチャが増えない(シーンが破棄し忘れていない)
+- シークと巻き戻しを繰り返しても、エラーが出ない
+
+初回は `npx playwright install chromium` でブラウザーを入れる。別の場所にある Chromium を使うときは `CHROMIUM_PATH` で指定する。
+
+### CI
+
+push のたびに GitHub Actions(`.github/workflows/ci.yml`)で、上のチェックをすべて実行する。Node.js のバージョンは `.nvmrc` に合わせる。
 
 ## スマホ(Android)での検証
 
@@ -74,7 +100,7 @@ TypeScript 7 は typescript-eslint に未対応なので、lint には oxlint �
 2. 端末を USB で PC につなぎ、PC の Chrome で `chrome://inspect` を開く
 3. 「Port forwarding...」で `5173` → `localhost:5173` を追加し、「Enable port forwarding」にチェックを入れる
 4. 端末の Chrome で `http://localhost:5173` を開く(localhost はセキュアコンテキストなので WebXR が使える)
-5. 「START AR」→ 机の上を見回してレティクルを出す → 置きたい場所をタップ
+5. 音源を選ぶ →「START AR」→ 机の上を見回してレティクルを出す → 置きたい場所をタップ
 
 ### 代替: HTTPS で起動する
 
@@ -86,18 +112,41 @@ npm run dev:https
 
 端末の Chrome で `https://<PC の LAN 内 IP>:5173` を開き、証明書の警告を許可して進む。
 
+## 公開(Cloudflare Pages)
+
+ビルドしたもの(`dist/`)は静的なファイルだけなので、静的ホスティングならどこでも置ける。WebXR は HTTPS が必要。
+Cloudflare Pages の Git 連携なら、push のたびに自動でビルドして公開される。最初に1回だけ、ダッシュボードで設定する。
+
+1. Cloudflare のダッシュボードで **Workers & Pages** → **Create application** → **Pages** → **Import an existing Git repository**
+2. このリポジトリを選んで **Begin setup**
+3. ビルドの設定を入れて **Save and Deploy**
+
+| 項目 | 値 |
+| --- | --- |
+| Production branch | `main` |
+| Framework preset | なし(None) |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+
+- Node.js のバージョンは `.nvmrc`(22)から決まる
+- `main` 以外のブランチと PR には、プレビュー用の URL が付く
+- ビルドは Cloudflare 側でリポジトリから行うので、音源は入らない(リポジトリに無いため)。手元でビルドしたものを直接上げる場合も、`npm run build` が `dist/audio/` を消す
+
 ## 構成
 
 ```
+.github/workflows/
+	ci.yml                CI(型チェック、lint、テスト、ビルド、ブラウザーでの描画の確認)
 docs/
 	design.md             歌詞の行ごとのシーンの設計(歌詞そのものは入れない)
 public/
 	timeline.json         シーンのタイムライン
 	beats.json            拍グリッド(tools/beats で音源を解析して作る)
-	audio/track.mp3       音源(各自で配置、コミットしない)
+	audio/track.mp3       開発用の音源(各自で配置、コミットしない。ビルドには入れない)
 src/
 	main.ts               起動とレンダーループ
-	core/                 再生クロック、拍グリッド、タイムライン、シーン切替、デスクトップモード、AR(hit-test / anchor)、DOM の UI
+	core/                 再生クロック、拍グリッド、タイムライン、シーン切替、デスクトップモード、AR(hit-test / anchor)、
+	                      DOM の UI(音源を選ぶ画面、fps の表示)、選んだ音源の保存(IndexedDB)
 	scenes/               シーン(1ファイル1シーン)と、その登録(index.ts)、共通の部品(kit.ts)、共通の床(stageBase.ts)
 		parts/              いくつかのシーンで使う描画の部品(オシロスコープ風のパネルなど)
 	sim/                  回路・スピン格子・迷路など、three.js に依存しない計算(テストつき)

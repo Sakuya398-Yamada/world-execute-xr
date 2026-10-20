@@ -22,6 +22,7 @@ export class ArStageController {
   private readonly stage: Group;
   private readonly reticle: Object3D;
   private readonly callbacks: ArCallbacks;
+  private readonly stageScale: number;
 
   private session: XRSession | null = null;
   private ending = false;
@@ -33,8 +34,12 @@ export class ArStageController {
   private readonly anchorToStage = new Matrix4();
   private readonly tmp = new Matrix4();
 
-  constructor(renderer: WebGLRenderer, stage: Group, reticle: Object3D, overlay: ArOverlay, callbacks: ArCallbacks) {
+  /**
+   * @param stageScale ステージ全体の大きさの倍率(`?scale=`)。配置したあとも、セッションを終えたあとも保つ
+   */
+  constructor(renderer: WebGLRenderer, stage: Group, reticle: Object3D, overlay: ArOverlay, callbacks: ArCallbacks, stageScale = 1) {
     this.renderer = renderer;
+    this.stageScale = stageScale;
     this.stage = stage;
     this.reticle = reticle;
     this.callbacks = callbacks;
@@ -133,7 +138,7 @@ export class ArStageController {
     this.reticle.visible = false;
     this.stage.position.set(0, 0, 0);
     this.stage.quaternion.identity();
-    this.stage.scale.set(1, 1, 1);
+    this.stage.scale.setScalar(this.stageScale);
     this.callbacks.onSessionEnd();
   }
 
@@ -153,7 +158,7 @@ export class ArStageController {
     const stageMatrix = new Matrix4().compose(
       position,
       new Quaternion().setFromAxisAngle(UP, yaw),
-      new Vector3(1, 1, 1),
+      new Vector3(this.stageScale, this.stageScale, this.stageScale),
     );
     stageMatrix.decompose(this.stage.position, this.stage.quaternion, this.stage.scale);
 

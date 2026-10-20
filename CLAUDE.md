@@ -20,6 +20,7 @@ Mili「world.execute(me);」の1番を、机の上の AR(WebXR `immersive-ar`)�
 	- いくつかのシーンで使う描画の部品は `src/scenes/parts/`、three.js に依存しない計算は `src/sim/`(テストつき)に置く
 - アニメーションは時刻だけから決める(巻き戻し・`?bar=` での途中開始でも同じ見た目になるように)。乱数は `src/sim/random.ts` の種つきのものを使い、状態を持つ計算は巻き戻されたら最初から計算し直す
 - 歌詞と音源はリポジトリに入れない(著作物)。歌詞の和訳や言い換えも同じ扱い。`public/audio/` と `tools/beats/out/` は gitignore 済み
+	- 公開したものには音源を入れず、見る人が自分の音源ファイルを選ぶ(`src/core/startPanel.ts`、IndexedDB に保存)。`public/audio/track.mp3` を使うのは開発サーバーだけで、`npm run build` は `dist/audio/` を消す
 - WebXR Device API だけを使う。Meta 専用の API・ライブラリは使わない(Android XR / XREAL への移植を前提にしている)
 - 映像作品なので、再生が始まったあとの操作は作らない(許すのは起動時の操作だけ)。開発用の機能は URL パラメータ(`?t=` `?bar=` `?debug` など)で出す
 - 3D のラベル(troika-three-text)は同梱の IBM Plex Mono(latin)なので、ASCII しか表示できない。式は `2*pi*f*t` のように書く
@@ -27,14 +28,16 @@ Mili「world.execute(me);」の1番を、机の上の AR(WebXR `immersive-ar`)�
 
 ## 動作確認
 
-- `npm run typecheck` / `npm run lint` / `npm run test` / `npm run build`
+- `npm run typecheck` / `npm run lint` / `npm run test` / `npm run test:browser` / `npm run build`(CI でも全部実行する)
+	- `test:browser` は全シーンを WebGL で描いて、エラーと GPU の資源の破棄し忘れを見る。シーンを足したり変えたりしたら回す
 - デスクトップモードのスクリーンショット(`?bar=` か `?t=` と `?debug` を付ける)
 - AR は、Immersive Web Emulator でセッション開始 → 原点確定 → 再生開始まで
 
 ### クラウド環境での確認
 
+- `npm run test:browser` はそのまま動く(`playwright` は `/opt/pw-browsers` の Chromium に合わせて 1.56.1 に固定している。上げるときは `CHROMIUM_PATH=/opt/pw-browsers/chromium` を付ける)
 - headless Chromium(`/opt/pw-browsers/chromium`)を playwright-core で起動する。引数は `--use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist`(音を鳴らすなら `--autoplay-policy=no-user-gesture-required` も)
-	- playwright-core などの確認用のパッケージはリポジトリに入れず、scratchpad に入れる
+	- 確認用のスクリプトと、そのためだけのパッケージ(iwer など)はリポジトリに入れず、scratchpad に入れる
 - Immersive Web Emulator の拡張は取得できない(GitHub への直接アクセスが 403)。代わりに npm の `iwer` + `@iwer/sem` を使う
 	- `new XRDevice(metaQuest3)` → `installRuntime({ forceInstall: true })` → `installSEM(SyntheticEnvironmentModule)` → DOMContentLoaded で `sem.loadEnvironment(<@iwer/sem/captures/office_small.json>)`
 	- esbuild で `--bundle --format=iife --external:@drawcall/glts` にまとめ、Playwright の `addInitScript` で注入する

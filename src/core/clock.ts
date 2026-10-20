@@ -96,13 +96,14 @@ export class SilentClock implements PlaybackClock {
 }
 
 /**
- * 音源を読み込めれば AudioClock、読み込めなければ SilentClock を返す。
+ * 音源を読み込めれば AudioClock を返し、読み込めなければ null を返す。
+ * src は URL のほか、見る人が選んだファイルの object URL でもよい。
  * Vite の開発サーバーは存在しないファイルにも index.html を返すことがあるので、
  * HTTP ステータスではなく <audio> の error イベントで判定する。
  */
-export async function createClock(src: string, silentDuration: number): Promise<PlaybackClock> {
+export async function loadAudioClock(src: string): Promise<PlaybackClock | null> {
   const audio = await tryLoadAudio(src);
-  return audio === null ? new SilentClock(silentDuration) : new AudioClock(audio);
+  return audio === null ? null : new AudioClock(audio);
 }
 
 function tryLoadAudio(src: string): Promise<HTMLAudioElement | null> {
