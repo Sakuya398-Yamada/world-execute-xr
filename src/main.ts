@@ -12,6 +12,8 @@ import { loadTimeline, timelineEnd } from './core/timeline';
 import { ArOverlay, DebugHud, PlayOverlay, showFatal } from './core/ui';
 import { ArStageController } from './core/xr';
 import { sceneRegistry } from './scenes';
+import { TRANSITION_BEATS } from './scenes/kit';
+import { StageBase } from './scenes/stageBase';
 import type { SceneContext } from './scenes/types';
 
 const DESKTOP_BACKGROUND = new Color(0x05070d);
@@ -70,7 +72,20 @@ async function main(): Promise<void> {
       return beats.positionAt(songTimeNow());
     },
   };
-  const manager = new SceneManager(sceneRegistry, timeline, ctx);
+  // シーンの切り替えはクロスフェード。前のシーンを終わったあとも少し残す
+  const transition = TRANSITION_BEATS * beats.secondsPerBeat;
+  const manager = new SceneManager(sceneRegistry, timeline, ctx, transition);
+  const stageBase = new StageBase(timeline, transition);
+  stage.add(stageBase.root);
+
+  // 全シーンを一度作り、シェーダーを先にコンパイルしておく(シーンに入った瞬間の引っかかりを防ぐ)。
+  // three.js はマテリアルを破棄するとコンパイル済みのシェーダーも解放するので、作ったものは破棄しない
+  const warmup = new Group();
+  for (const module of sceneRegistry.values()) {
+    const root = module.warmup?.(ctx);
+    if (root !== undefined) warmup.add(root);
+  }
+  await renderer.compileAsync(warmup, camera, scene);
 
   // 開発用: 歌詞に合わせてキーを押し、小節を記録する(timeline.json の下書き用)
   const marker = params.debug ? new BarMarker(beats, songTimeNow, (t) => clock.seek(Math.max(t + params.latency, 0))) : null;
@@ -150,7 +165,8 @@ async function main(): Promise<void> {
     const dt = Math.min(Math.max(songTime - prevSongTime, 0), 0.1);
     prevSongTime = songTime;
     manager.update(songTime, dt);
-    originMarker.visible = manager.activeEntry === null;
+    const baseOpacity = stageBase.update(songTime);
+    originMarker.visible = manager.activeEntry === null && baseOpacity === 0;
 
     if (renderer.xr.isPresenting) {
       // 映像作品なので、曲が終わったら AR も終える

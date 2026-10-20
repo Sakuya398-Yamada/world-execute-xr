@@ -152,13 +152,16 @@ export interface SceneView {
   update(beat: number, ctx: SceneContext): void;
 }
 
-/** シーンの頭と終わりのフェードにかける拍数 */
-const FADE_IN = 0.75;
-const FADE_OUT = 0.5;
+/**
+ * シーンの切り替えのクロスフェードにかける拍数。
+ * 次のシーンはこの拍数でフェードインし、前のシーンは終わったあとこの拍数だけ残ってフェードアウトする(SceneManager の tail)。
+ */
+export const TRANSITION_BEATS = 0.75;
 
 /**
  * SceneView を作る関数から SceneModule を作る。enter で作り、exit で破棄する。
  * 時刻は拍に直して渡し、シーンの頭と終わりは自動でフェードさせる。
+ * 終わったあとも TRANSITION_BEATS の間は update が呼ばれる(beat > length)ので、view はそれを想定しておく。
  * @param create length はシーンの長さ [拍]
  */
 export function defineScene(id: string, create: (ctx: SceneContext, length: number) => SceneView): SceneModule {
@@ -174,7 +177,9 @@ export function defineScene(id: string, create: (ctx: SceneContext, length: numb
     update(ctx, t) {
       if (view === null) return;
       const beat = t / ctx.beats.secondsPerBeat;
-      view.fader.apply(Math.min(smoothstep(clamp01(beat / FADE_IN)), smoothstep(clamp01((length - beat) / FADE_OUT))));
+      const fadeIn = smoothstep(clamp01(beat / TRANSITION_BEATS));
+      const fadeOut = 1 - smoothstep(clamp01((beat - length) / TRANSITION_BEATS));
+      view.fader.apply(Math.min(fadeIn, fadeOut));
       view.update(beat, ctx);
     },
     exit(ctx) {
@@ -183,27 +188,42 @@ export function defineScene(id: string, create: (ctx: SceneContext, length: numb
       disposeTree(view.root);
       view = null;
     },
+    warmup(ctx) {
+      return create(ctx, WARMUP_LENGTH).root;
+    },
   };
 }
+
+/** 事前コンパイル用に作るときのシーンの長さ [拍](見た目は使わないので、ふつうの2小節) */
+const WARMUP_LENGTH = 8;
 
 /** ステージの大きさ [m](机の上の約 40cm × 30cm) */
 export const STAGE = { width: 0.4, depth: 0.3 } as const;
 
-/** 床の薄いグリッド(5cm)と外枠。シーンの共通の足場 */
-export function stageFloor(fader: Fader, opacity = 1): Group {
+/**
+ * 図面の表題欄(ステージの右下)。シーンごとに図番と題名を入れて、全シーンを1冊の図面集のように見せる。
+ * @param fig 図番(歌詞の行の番号)
+ */
+export function titleBlock(fader: Fader, fig: number, title: string, subtitle: string): Group {
   const { width: w, depth: d } = STAGE;
+  const inset = 0.006;
+  const box = { x0: 0.07, x1: w / 2 - inset, z0: 0.108, z1: d / 2 - inset };
   const group = new Group();
-  const grid = new LineBuilder();
-  for (let x = -w / 2; x <= w / 2 + 1e-6; x += 0.05) grid.segment(new Vector3(x, Y_INK / 2, -d / 2), new Vector3(x, Y_INK / 2, d / 2));
-  for (let z = -d / 2; z <= d / 2 + 1e-6; z += 0.05) grid.segment(new Vector3(-w / 2, Y_INK / 2, z), new Vector3(w / 2, Y_INK / 2, z));
-  group.add(grid.build(fader.line(PALETTE.gridMinor, 0.1 * opacity)));
-  const frame = new LineBuilder().polyline(
-    [new Vector3(-w / 2, Y_INK, -d / 2), new Vector3(w / 2, Y_INK, -d / 2), new Vector3(w / 2, Y_INK, d / 2), new Vector3(-w / 2, Y_INK, d / 2)],
-    true,
-  );
-  group.add(frame.build(fader.line(PALETTE.gridMajor, 0.35 * opacity)));
+  const frame = new LineBuilder()
+    .polyline([new Vector3(box.x0, Y_INK, box.z0), new Vector3(box.x1, Y_INK, box.z0), new Vector3(box.x1, Y_INK, box.z1), new Vector3(box.x0, Y_INK, box.z1)], true)
+    .segment(new Vector3(box.x0, Y_INK, (box.z0 + box.z1) / 2), new Vector3(box.x1, Y_INK, (box.z0 + box.z1) / 2));
+  group.add(frame.build(fader.line(PALETTE.gridMajor, 0.42)));
+  // 等幅フォントなので、文字数から幅を見積もり、欄に収まらないときは文字を小さくする
+  const room = box.x1 - box.x0 - 0.016;
+  const fit = (text: string, size: number): number => Math.min(size, room / (text.length * MONO_ADVANCE));
+  const heading = `FIG.${String(fig).padStart(2, '0')}  ${title}`;
+  group.add(floorLabel(fader, heading, box.x0 + 0.008, 0.1175, { anchorX: 'left', size: fit(heading, 0.0058) }));
+  group.add(floorLabel(fader, subtitle, box.x0 + 0.008, 0.1345, { anchorX: 'left', size: fit(subtitle, 0.0048) }));
   return group;
 }
+
+/** IBM Plex Mono の1文字の送り幅(文字の高さに対する比) */
+const MONO_ADVANCE = 0.6;
 
 /** 床に寝かせたラベル(手前から読める向き) */
 export function floorLabel(fader: Fader, text: string, x: number, z: number, options: Partial<LabelOptions> = {}, opacity = 1): Text {
