@@ -3,6 +3,8 @@
 Mili「world.execute(me);」の1番を、机の上の AR(WebXR `immersive-ar`)として再構成するプロトタイプ。
 歌詞ごとに数学・電気のモチーフを机の上に立ち上げる映像作品で、MV の再現ではなく、歌詞の構造を XR に翻訳することを目指している。
 
+公開版: https://world-execute-xr.pages.dev/
+
 - Vite + TypeScript(strict)+ three.js + troika-three-text
 - WebXR Device API のみ使用(Meta 専用の API・ライブラリは使わない。Android XR / XREAL Aura への移植を前提にしている)
 - 音源は同梱しない。見る人が自分の音源ファイルを選んで再生する
@@ -113,6 +115,8 @@ npm run dev:https
 端末の Chrome で `https://<PC の LAN 内 IP>:5173` を開き、証明書の警告を許可して進む。
 
 ## 公開(Cloudflare Pages)
+
+公開先は https://world-execute-xr.pages.dev/(Cloudflare Pages のプロジェクト `world-execute-xr`、`main` から自動でビルド)。
 
 ビルドしたもの(`dist/`)は静的なファイルだけなので、静的ホスティングならどこでも置ける。WebXR は HTTPS が必要。
 Cloudflare Pages の Git 連携なら、push のたびに自動でビルドして公開される。最初に1回だけ、ダッシュボードで設定する。
