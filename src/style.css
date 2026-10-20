@@ -95,3 +95,108 @@ canvas {
   font-size: 22px;
   line-height: 1;
 }
+
+.fps-meter {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  margin: 0;
+  padding: 6px 8px;
+  background: rgba(5, 7, 13, 0.7);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+/* 起動画面(音源を選ぶ) */
+.start-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0 auto;
+  width: min(560px, calc(100% - 32px));
+  box-sizing: border-box;
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  background: rgba(5, 7, 13, 0.82);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.start-panel.compact {
+  top: auto;
+  bottom: 140px;
+  transform: none;
+  padding: 12px 16px;
+}
+
+.start-panel.dragging {
+  border-color: #ffc478;
+  background: rgba(40, 30, 10, 0.85);
+}
+
+.start-panel h1 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.start-panel.compact h1 {
+  display: none;
+}
+
+.start-intro p {
+  margin: 0 0 8px;
+}
+
+.start-en {
+  opacity: 0.7;
+}
+
+.start-note {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.start-status {
+  margin: 8px 0;
+  white-space: pre-wrap;
+}
+
+.start-status.warn {
+  color: #ffc478;
+}
+
+.start-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.start-actions button {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  background: rgba(143, 196, 255, 0.08);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.start-actions button:hover {
+  background: rgba(143, 196, 255, 0.18);
+}
+
+.start-actions .start-silent {
+  border-color: transparent;
+  background: none;
+  opacity: 0.7;
+  text-decoration: underline;
+}
