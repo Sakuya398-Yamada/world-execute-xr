@@ -12,6 +12,12 @@ export interface PlaybackClock {
   seek(t: number): void;
 }
 
+/**
+ * <audio> の再生位置はマイクロ秒単位に丸められ、読み返すとシークした位置のわずかに手前になることがある。
+ * 小節の頭ちょうどへシークすると、前のシーンの最後の一瞬が映ってしまうので、この分だけ後ろへシークする [s]
+ */
+const SEEK_NUDGE = 1e-3;
+
 class AudioClock implements PlaybackClock {
   readonly kind = 'audio';
   private readonly audio: HTMLAudioElement;
@@ -45,7 +51,7 @@ class AudioClock implements PlaybackClock {
   }
 
   seek(t: number): void {
-    this.audio.currentTime = t;
+    this.audio.currentTime = t + SEEK_NUDGE;
   }
 }
 

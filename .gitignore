@@ -2,6 +2,9 @@ node_modules/
 dist/
 *.local
 
+# vitest のブラウザーモードが、失敗したテストのスクリーンショットを置く
+.vitest/
+
 # 音源はリポジトリに含めない(各自ローカルに配置)
 public/audio/*
 !public/audio/.gitkeep
