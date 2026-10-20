@@ -1,3 +1,10 @@
+/** 参考にした映像。起動画面に、音源を選んだあとも出しておく */
+export const REFERENCE_VIDEO = {
+  title: 'world.execute(me);',
+  author: 'Kaito Sugimura',
+  url: 'https://www.youtube.com/watch?v=qV0aezH6Aj8',
+} as const;
+
 export interface StartPanelCallbacks {
   /** ファイルが選ばれた(ファイル選択、またはドラッグ&ドロップ) */
   onFile(file: File): void;
@@ -58,6 +65,7 @@ export class StartPanel {
     const silent = button('音源なしで見る / WATCH WITHOUT AUDIO', 'start-silent', () => callbacks.onSilent());
     actions.append(this.choose, silent);
     this.root.appendChild(actions);
+    this.root.appendChild(referenceCredit());
 
     // ページのどこにドロップしても選べるようにする。再生中(この画面を隠している間)は受け付けない。
     // そのときもブラウザーがファイルを開いてページを離れないよう、既定の動作は止める
@@ -116,6 +124,18 @@ function paragraph(text: string, className?: string): HTMLParagraphElement {
   p.textContent = text;
   if (className !== undefined) p.className = className;
   return p;
+}
+
+/** 参考にした映像へのリンク(新しいタブで開く) */
+function referenceCredit(): HTMLParagraphElement {
+  const link = document.createElement('a');
+  link.href = REFERENCE_VIDEO.url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = `${REFERENCE_VIDEO.author}「${REFERENCE_VIDEO.title}」`;
+  const credit = paragraph('参考にした映像 / Inspired by: ', 'start-credit');
+  credit.append(link, '(YouTube)');
+  return credit;
 }
 
 function button(label: string, className: string, onClick: () => void): HTMLButtonElement {
